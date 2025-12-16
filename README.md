@@ -1,51 +1,10 @@
-## Example Summary
+一、简易信号发生器（MSPM0G3507）
+1.通过准备好的波形数组，运用DMA将数组的值搬运到DAC中，先储存在DAC的FIFO中，然后等定时器0事件（计数值为零），将FIFO的数移至DAC的数据寄存器中，开始转化。
+2.DMA：配置好搬运起始地址和搬运终点地址，设置地址是否自增，在这题中，因为是从数组搬运到DAC，因此搬运起始地址自增，终点地址不变。通过设置DAC的FIFO的空阈值，来触发DMA的搬运。如：设置FIFO空阈值为2/4，则在FIFO的存储量低于等于总容量的2/4时，触发DMA搬运至DAC。
+3.DAC：12bit，将数字信号转化为模拟信号，DAC内部有采样定时器，可以依靠自己设置频率，但可选的频率固定且有限。在这个题中，通过事件，定时器发布事件，DAC（的FIFO）订阅事件，定时器产生一个零事件（计数值为零），通过内部的EVENT，使订阅者（DAC）由FIFO转移一个数至DAC中，开始转化.
+定时器频率计算
 
-DAC12 sends a repetitive signal using DMA and sample timer generator.
-The sample timer generator is configured to 1MSPS, so the output frequency will be 1MSPS / (Number of samples).
-The sine-wave contains 64 samples, resulting in 15.625kHz.
-The DAC is configured to use VDDA/VSSA as reference.
-
-## Peripherals & Pin Assignments
-
-| Peripheral | Pin | Function |
-| --- | --- | --- |
-| SYSCTL |  |  |
-| EVENT |  |  |
-| DMA |  |  |
-| DAC12 | PA15 | DAC12 Output Pin |
-| DEBUGSS | PA20 | Debug Clock |
-| DEBUGSS | PA19 | Debug Data In Out |
-
-## BoosterPacks, Board Resources & Jumper Settings
-
-Visit [LP_MSPM0G3507](https://www.ti.com/tool/LP-MSPM0G3507) for LaunchPad information, including user guide and hardware files.
-
-| Pin | Peripheral | Function | LaunchPad Pin | LaunchPad Settings |
-| --- | --- | --- | --- | --- |
-| PA15 | DAC12 | OUT | J3_30 | N/A |
-| PA20 | DEBUGSS | SWCLK | N/A | <ul><li>PA20 is used by SWD during debugging<br><ul><li>`J101 15:16 ON` Connect to XDS-110 SWCLK while debugging<br><li>`J101 15:16 OFF` Disconnect from XDS-110 SWCLK if using pin in application</ul></ul> |
-| PA19 | DEBUGSS | SWDIO | N/A | <ul><li>PA19 is used by SWD during debugging<br><ul><li>`J101 13:14 ON` Connect to XDS-110 SWDIO while debugging<br><li>`J101 13:14 OFF` Disconnect from XDS-110 SWDIO if using pin in application</ul></ul> |
-
-### Device Migration Recommendations
-This project was developed for a superset device included in the LP_MSPM0G3507 LaunchPad. Please
-visit the [CCS User's Guide](https://software-dl.ti.com/msp430/esd/MSPM0-SDK/latest/docs/english/tools/ccs_ide_guide/doc_guide/doc_guide-srcs/ccs_ide_guide.html#sysconfig-project-migration)
-for information about migrating to other MSPM0 devices.
-
-### Low-Power Recommendations
-TI recommends to terminate unused pins by setting the corresponding functions to
-GPIO and configure the pins to output low or input with internal
-pullup/pulldown resistor.
-
-SysConfig allows developers to easily configure unused pins by selecting **Board**→**Configure Unused Pins**.
-
-For more information about jumper configuration to achieve low-power using the
-MSPM0 LaunchPad, please visit the [LP-MSPM0G3507 User's Guide](https://www.ti.com/lit/slau873).
-
-## Example Usage
-Compile, load and run the example.
-Connect an oscilloscope to check output on DAC_OUT.
-Default output will be a sine wave at 15.625kHz with a maximum amplitude relative to VDDA.
-
-On powerup, the DAC pin(s) used in this example are by default set to
-the correct analog mode. Therefore, calls to
-DL_GPIO_initPeripheralAnalogFunction for pinmuxing those pins are not needed.
+Freq = clock/(period+1) - 1
+运行时实时改变定时器频率用函数  DL_TimerG_setLoadValue(TIMG0, newPeriod);
+原理：通过改变定时器的周期来改变频率
+IOMUX_PINCMx：引脚复用   配置电器属性(上拉/下拉电阻、驱动能力（比如高电流驱动）、翻转速度、模拟输入模式（Analog Input，给 ADC 用））
